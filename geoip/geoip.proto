@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package geoip;
+
+message GeoIPRequest {
+    string ip = 1;
+}
+
+message GeoIPResponse {
+    string name = 1;
+}
+
+service GeoIPService {
+    rpc QueryCountry(GeoIPRequest) returns (GeoIPResponse);     // 查询IP所属国家
+    rpc QuerySubdivision(GeoIPRequest) returns (GeoIPResponse); // 查询IP所属地区
+    rpc QueryCity(GeoIPRequest) returns (GeoIPResponse);        // 查询IP所属城市
+}
