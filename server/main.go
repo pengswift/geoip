@@ -1,25 +1,33 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net"
+	"os"
+	"strings"
 
 	"github.com/oschwald/geoip2-golang"
+	"github.com/oschwald/maxminddb-golang"
 	pb "github.com/pengswift/geoip/geoip"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
 const (
-	port = ":70051"
+	port = ":60052"
 )
 
 var (
 	ERROR_CANNOT_QUERY_IP = errors.New("cannot query ip")
 )
 
+type Reader struct {
+	mmdbReader *maxminddb.Reader
+}
+
 type server struct {
-	db *maxminddb.Reader
+	db *geoip2.Reader
 }
 
 func (s *server) init() {
@@ -54,7 +62,7 @@ func (s *server) dataPath() (path string) {
 
 func (s *server) QueryCountry(ctx context.Context, in *pb.GeoIPRequest) (*pb.GeoIPResponse, error) {
 	ip := net.ParseIP(in.Ip)
-	if record, err := db.City(ip); err == nil {
+	if record, err := s.db.City(ip); err == nil {
 		return &pb.GeoIPResponse{Name: record.Country.IsoCode}, nil
 	}
 	return nil, ERROR_CANNOT_QUERY_IP
@@ -62,7 +70,7 @@ func (s *server) QueryCountry(ctx context.Context, in *pb.GeoIPRequest) (*pb.Geo
 
 func (s *server) QuerySubdivision(ctx context.Context, in *pb.GeoIPRequest) (*pb.GeoIPResponse, error) {
 	ip := net.ParseIP(in.Ip)
-	if record, err := db.City(ip); err == nil {
+	if record, err := s.db.City(ip); err == nil {
 		return &pb.GeoIPResponse{Name: record.Subdivisions[0].Names["en"]}, nil
 	}
 	return nil, ERROR_CANNOT_QUERY_IP
@@ -70,7 +78,7 @@ func (s *server) QuerySubdivision(ctx context.Context, in *pb.GeoIPRequest) (*pb
 
 func (s *server) QueryCity(ctx context.Context, in *pb.GeoIPRequest) (*pb.GeoIPResponse, error) {
 	ip := net.ParseIP(in.Ip)
-	if record, err := db.City(ip); err == nil {
+	if record, err := s.db.City(ip); err == nil {
 		return &pb.GeoIPResponse{Name: record.Country.Names["en"]}, nil
 	}
 	return nil, ERROR_CANNOT_QUERY_IP
